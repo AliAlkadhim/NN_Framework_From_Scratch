@@ -3,6 +3,7 @@ import framework.framework as framework
 #import the directory_framework.filename_framework (becauase the directory is viewed as a package because it has __init__.py)
 import framework.layer as layer
 import framework.activation as activation
+import framework.loss_funcs as loss_funcs
 
 
 train_generator, eval_generator = dat.get_data_set()
@@ -18,7 +19,7 @@ sample=next(train_generator())#this is just to get the dimenstions of one batch
 #we're gonna be building an autoencoder, which tries to replicate the input,therefore we have the same number of nodes as pixels and the sample for output and input layers
 
 #DEFINE THE # NODES IN EACH HIDDEN LAYER
-N_HIDDEN_NODES = [5]
+N_HIDDEN_NODES = [5, 3, 2]
 #define # input and output nodes for each LAYER
 N_INPUT_NODES =  sample.shape[0] * sample.shape[1] 
 N_OUTPUT_NODES = sample.shape[0] * sample.shape[1]
@@ -50,7 +51,8 @@ print('MODEL=',MODEL)
 
 autoencoder = framework.ANN(
     model=MODEL, 
-    expected_input_range=EXPECTED_VALUES_RANGE
+    expected_input_range=EXPECTED_VALUES_RANGE,
+    loss_func=loss_funcs.quadratic_loss
     )#have to call model since its in __init__
     #here its training on the whole set then evaluating on the whole set
 autoencoder.train(train_generator)
