@@ -2,6 +2,7 @@
 import numpy as np
 import os
 import matplotlib.pyplot as plt
+plt.switch_backend('agg')#switch to interactive plot
 
 class ANN(object):
     """
@@ -53,10 +54,24 @@ class ANN(object):
         offset = expected_min
         return (normalized_values + 0.5) * scale_factor + offset
 
+    def RMS(self, v):
+        return (np.mean(v**2))**0.5
+
+    def back_propagate_data(self, dLoss_dy):
+        """
+        Args:
+            dLoss_ly: derivative of the loss wrt y (the output of the WHOLE NN)
+        """
+        layers_in_reverse = self.model[::-1]
+        for i_layer, layer in enumerate(layers_in_reverse):
+            dLoss_dx = layer.back_propagate_layer(dLoss_dy)
+            #the dLoss/dx becomes the dLoss/dy of the next layer
+            # X layer1 - > layer_2 .... -> layer_n -> y
+            #     <-...  dL/dx  <- BP dL/dy  <- dL/dx   <-BP  dL/dy
+            dLoss_dy = dLoss_dx
 
     def train(self, training_set):
         """
-
         Args:
             training_set (GENERATOR): its a generator function for the data, so call it by doing next(training_set())
         """
@@ -65,11 +80,15 @@ class ANN(object):
             x=self.normalize(x)
             y=self.forward_propagate_data(x)
             loss = self.loss_func.calc(x,y)
+            #calculate the derivative of the loss wrt x, ie returns dLoss_dx
             loss_grad = self.loss_func.calc_gradient(x,y)
-            # loss_modulated = loss + (np.mean(loss_grad_wrt_nu**2))**0.5
             #take the RMS of the loss (eg if you have a 2x2 error thats not useful!)
-            RMS_loss=(np.mean(loss**2))**0.5
+            # RMS_loss=(np.mean(loss**2))**0.5
+            RMS_loss = self.RMS(loss)
             self.error_history.append(RMS_loss)
+
+            #BACKPROPAGATION: back_propagate_data(dLoss_dx) = dLoss
+            # self.back_propagate_data(loss_grad)
             if (iter + 1) % self.viz_interval==0:
                 #generate a report every multiple of viz_interval (the 1 is just so that the 0th iteration isnt included)
                 print(f'train y {y} \t loss \t {loss}')
@@ -81,16 +100,17 @@ class ANN(object):
             x = self.normalize(x)
             y=self.forward_propagate_data(x)
             loss = self.loss_func.calc(x,y)
+            #calculate the derivative of the loss wrt x, ie returns dLoss_dx
             loss_grad = self.loss_func.calc_gradient(x,y)
             #take the RMS of the loss (eg if you have a 2x2 error thats not useful!)
-            RMS_loss=(np.mean(loss**2))**0.5
+            RMS_loss= self.RMS(loss)
+
             self.error_history.append(RMS_loss)
             if (iter + 1) % self.viz_interval==0:
                     #generate a report every multiple of viz_interval (the 1 is just so that the 0th iteration isnt included)
                 print(f'train y {y} \t loss \t {loss}')
                 self.report_error()
 
-    
     def forward_propagate_data(self, x):
         """Forward propagate the inputs to the entire NN (ie the data)
 
@@ -101,6 +121,29 @@ class ANN(object):
         for layer in self.model:
             y = layer.forward_propagate_layer(y)
         #remember that layer is a layers.Dense member
+        return y.ravel()
+
+    def forward_propagate_data_to_layer(self, x, i_layer):
+        """
+        Args:
+            x ([type]): input data
+            i_layer ([type]): the layer that you want to propagate to
+        """
+        y = x.ravel()[np.newaxis,:]
+        for layer in self.layers[:i_layer]:
+            #from teh beginning to layer i
+            y = layer.forward_propagate_layer(y)
+        return y.ravel()
+    def forward_propagate_data_from_layer(self, x, i_layer):
+        """
+        Args:
+            x ([type]): input data
+            i_layer ([type]): the layer that you want to propagate from
+        """
+        y = x.ravel()[np.newaxis,:]
+        for layer in self.layers[i_layer:]:
+            #from layer i to the end
+            y = layer.forward_propagate_layer(y)
         return y.ravel()
 
     def report_error(self):
@@ -117,7 +160,7 @@ class ANN(object):
             averaged_history.append(np.mean(history_over_current_bin))
 
         error_history = np.log10(np.array(averaged_history)+1e-10)
-        print('error_history', error_history)
+        print('error_history[:5]', error_history[:5])
         #take the log of the averaged history because there we could really notice/see small differences that really matter. the small value at the end is so that if the argument of log is 0 it doesnt break
         report_min=np.minimum(self.error_min, error_history)
         report_max=np.maximum(self.error_max, error_history)

@@ -26,3 +26,19 @@ class quadratic_loss(object):
     #         gradient wrt x
     #     """
     #     return 2 * (y-x) 
+
+class absolute_loss(object):
+    @staticmethod
+    def calc(x,y):
+        return np.abs(y-x)
+
+    @staticmethod
+    def calc_gradient(x,y):
+        """calculate gradient of the loss
+            x ([type]): [description]
+            y ([type]): [description]
+
+        Returns:
+            gradient wrt x
+        """
+        return np.sign(y-x)

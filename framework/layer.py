@@ -10,6 +10,8 @@ class Dense(object):
         layer= Dense(N_inputs,N_outputs). For example, a single layer NN with no hidden layers could be done with
         model_1=[Dense(N_inputs,N_outputs)]
         all these things are first initialized randomly here, and then they pass to the later functions of this class
+
+        activation is activation class (such as tanh) that well be specified in run_framework.py
         """
         self.N_inputs = int(N_inputs)
         self.N_outputs = int(N_outputs)
@@ -20,7 +22,7 @@ class Dense(object):
         #the size of the weights is a matrix of ( N_inputs + 1) X (N_outputs) (and the inputs) is w[N_inputs]+b which is the rows, and the outputs will have [N_outputs]
         rows = self.N_inputs+1#the +1 because there will be a bias vector 
         columns = self.N_outputs
-        self.weights = np.random.sample(size=(rows,columns))
+        self.weights = np.random.sample(size=(rows,columns) )
         #random sample returns a random unifrom between0 and 1
         self.w_grad = np.zeros((self.N_inputs+1, self.N_outputs))
 
@@ -50,3 +52,24 @@ class Dense(object):
         #Perform activation on the output for the final output
         self.y = self.activation.calc(self.y_intermediate)
         return self.y
+
+    def back_propagate_layer(self, dLoss_dy):
+        """
+        Args:
+            dLoss_dy ([type]): the derivative of loss wrt y for ONE LAYER. 
+            dL/dx = dL/dy * dy/dx
+            EG if its a linear layer, y=mx+b and and L=(y-x)^2 with no activation function then: 
+            dL/dx = dL/dy * m (and we dont need to simplify since dL/dy is an input) 
+
+        If there is an activation function f such that y = f(y') then 
+        dLoss/dx = dLoss/dy dy/dy' dy'/dx
+                        = dLoss/dy d f(y')/dy' dy'/dx
+
+        Returns:
+            dLoss/dx of the current layer
+        """
+        dy_dyprime = self.activation.calc_deriv(self.y)#dy/dy'=df(y')/dy'
+
+        dLoss_dx = (dLoss_dy * dy_dyprime) @ self.weights.transpose()
+        #return everything except the last column, which is the bias term, which is always 1 (const) and not backpropagated
+        return dLoss_dx[:, :-1]
