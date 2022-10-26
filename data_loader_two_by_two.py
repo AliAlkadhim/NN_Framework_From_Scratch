@@ -7,7 +7,7 @@ def get_data_set():
 	To use this, do import data_loader_two_by_two as dat; train_generator, evaluation_generator = get_data_set(); new_train_example=next(train_generator())
 	"""
 	examples = []
-	n_examples=10
+	n_examples=1000
 	for i in range(n_examples):
 		array_2d = np.random.rand(2,2)#sample unifrm data in range (0,1) of size 2x2
 		examples.append(array_2d)

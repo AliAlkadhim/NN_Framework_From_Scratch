@@ -51,6 +51,7 @@ class Dense(object):
 
         #Perform activation on the output for the final output
         self.y = self.activation.calc(self.y_intermediate)
+        #here y is really yprime in the back_propagate_layer() layer , ie yprime=activation_function(y)
         return self.y
 
     def back_propagate_layer(self, dLoss_dy):
@@ -63,13 +64,32 @@ class Dense(object):
 
         If there is an activation function f such that y = f(y') then 
         dLoss/dx = dLoss/dy dy/dy' dy'/dx
-                        = dLoss/dy d f(y')/dy' dy'/dx
+                        = dLoss/dy d [f(y')]/dy' dy'/dx
 
         Returns:
             dLoss/dx of the current layer
         """
-        dy_dyprime = self.activation.calc_deriv(self.y)#dy/dy'=df(y')/dy'
+        # $y' = \vec{x} \cdot \vec{w}^T $
+        # i.e. yprime = self.x @ self.weights.transpose()
+        # so $dy'/dx = x$ i.e. dyprime_dx = self.weights
+        # and $dyprime/dw = \vec{w}^T$ ie dyprime_dw=self.weights.transpose()
+        
+        #dy/dy'=d [f(y')]/dy'
+        dy_dyprime = self.activation.calc_deriv(self.y)
 
+        #y = f(y') = f(x @ weights) so 
+        # dy/dw = dy/dy' dy'/dw  = dy/dy' * x
+        dy_dw = self.x.transpose() @  dy_dyprime
+
+        #dL/dw = dL/dy * dy/dw
+        dLoss_dw = dLoss_dy * dy_dw
+
+        #update the weights by subtracting the gradient
+        self.weights = self.weights - ( dLoss_dw * self.learning_rate)
+
+        # $L = (y-x)^2 = ( f(y') - x)^2 $ so
+        # dL/dx = dL/d[f(y')] d [f(y')]/dy' dy'/dx
         dLoss_dx = (dLoss_dy * dy_dyprime) @ self.weights.transpose()
+
         #return everything except the last column, which is the bias term, which is always 1 (const) and not backpropagated
         return dLoss_dx[:, :-1]

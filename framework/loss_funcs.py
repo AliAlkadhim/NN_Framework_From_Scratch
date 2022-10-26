@@ -7,12 +7,12 @@ class quadratic_loss(object):
 
     @staticmethod
     def calc_gradient(x,y):
-        """calculate gradient of the loss
+        """calculate gradient of the loss wrt x
             x ([type]): [description]
             y ([type]): [description]
 
         Returns:
-            gradient wrt x
+            gradient wrt x ie returns dLoss_dx
         """
         return 2 * (y-x) 
 

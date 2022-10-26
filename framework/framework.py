@@ -22,8 +22,8 @@ class ANN(object):
         self.loss_func=loss_func#loss function class
 
         #it helps to set the numbers as integers so that we can call range on it later
-        self.n_iter_train = int(1e8)#number of iterations to train
-        self.n_iter_evaluate = int(1e6) #number of iterations to evaluate on
+        self.n_iter_train = int(1e2)#number of iterations to train
+        self.n_iter_evaluate = int(1e1) #number of iterations to evaluate on
         self.expected_input_range=expected_input_range
         self.error_history = []# list of errors, at each iteration of training/evaluation, the error will be added to it
         self.viz_interval = int(1e5)#self.n_iter_train
@@ -47,12 +47,29 @@ class ANN(object):
         scaled_values = (values - offset)/scale_factor - 0.5#this -0.5 is there so that the lowest value is -0.5
         return scaled_values
 
+    def normalize_IQN(self, values):
+        expected_range=self.expected_input_range
+        expected_min, expected_max = expected_range
+        scale_factor = expected_max - expected_min
+        offset = expected_min
+        scaled_values = (values - offset)/scale_factor 
+        return scaled_values
+
     def denormalize(self, normalized_values):
         expected_range=self.expected_input_range
         expected_min, expected_max = expected_range
         scale_factor = expected_max - expected_min
         offset = expected_min
         return (normalized_values + 0.5) * scale_factor + offset
+
+
+    def denormalize_IQN(self, normalized_values):
+        expected_range=self.expected_input_range
+        expected_min, expected_max = expected_range
+        scale_factor = expected_max - expected_min
+        offset = expected_min
+        return normalized_values  * scale_factor + offset
+
 
     def RMS(self, v):
         return (np.mean(v**2))**0.5
@@ -80,7 +97,7 @@ class ANN(object):
             x=self.normalize(x)
             y=self.forward_propagate_data(x)
             loss = self.loss_func.calc(x,y)
-            #calculate the derivative of the loss wrt x, ie returns dLoss_dx
+            #calculate the (minimize) derivative of the loss wrt x, ie returns dLoss_dx
             loss_grad = self.loss_func.calc_gradient(x,y)
             #take the RMS of the loss (eg if you have a 2x2 error thats not useful!)
             # RMS_loss=(np.mean(loss**2))**0.5
