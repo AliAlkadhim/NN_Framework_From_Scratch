@@ -22,13 +22,15 @@ class ANN(object):
         self.loss_func=loss_func#loss function class
 
         #it helps to set the numbers as integers so that we can call range on it later
-        self.n_iter_train = int(1e2)#number of iterations to train
-        self.n_iter_evaluate = int(1e1) #number of iterations to evaluate on
+        self.n_iter_train = int(1e3)#number of iterations to train
+        self.n_iter_evaluate = int(1e3) #number of iterations to evaluate on
         self.expected_input_range=expected_input_range
         self.error_history = []# list of errors, at each iteration of training/evaluation, the error will be added to it
-        self.viz_interval = int(1e5)#self.n_iter_train
+        self.viz_interval = int(1e1)
+        #obviously it should be that viz_interval > n_train_iter
+        #self.n_iter_train
         #average over the errors in the last n_bin_size iterations
-        self.error_bin_size=int(1e3)
+        self.error_bin_size=int(1e1)
         # #min and max of report plot
         self.error_min=-3
         self.error_max=0
@@ -93,7 +95,8 @@ class ANN(object):
             training_set (GENERATOR): its a generator function for the data, so call it by doing next(training_set())
         """
         for iter in range(self.n_iter_train):
-            x = next(training_set()).ravel()#ravel flattens it to 1-d array
+            # x = next(training_set()).ravel()#ravel flattens it to 1-d array
+            x = next(training_set).ravel()#
             x=self.normalize(x)
             y=self.forward_propagate_data(x)
             loss = self.loss_func.calc(x,y)
@@ -105,7 +108,7 @@ class ANN(object):
             self.error_history.append(RMS_loss)
 
             #BACKPROPAGATION: back_propagate_data(dLoss_dx) = dLoss
-            # self.back_propagate_data(loss_grad)
+            self.back_propagate_data(loss_grad)
             if (iter + 1) % self.viz_interval==0:
                 #generate a report every multiple of viz_interval (the 1 is just so that the 0th iteration isnt included)
                 print(f'train y {y} \t loss \t {loss}')
@@ -113,7 +116,8 @@ class ANN(object):
 
     def evaluate(self, evaluation_set):
         for iter in range(self.n_iter_evaluate):
-            x = next(evaluation_set()).ravel()
+            x = next(evaluation_set).ravel()
+            # x = next(evaluation_set()).ravel()
             x = self.normalize(x)
             y=self.forward_propagate_data(x)
             loss = self.loss_func.calc(x,y)

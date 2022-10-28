@@ -30,6 +30,13 @@ class Dense(object):
         self.x = np.zeros((1,self.N_inputs+1))
         self.y=np.zeros((1,self.N_outputs))
 
+        #initiate empty list of regularizers
+        self.regularizers=[]
+
+    def add_regularizer(self, new_regularizer):
+        self.regularizers.append(new_regularizer)
+            
+
     def forward_propagate_layer(self, inputs):
         """propagate the inputs forward through the NN
 
@@ -86,6 +93,10 @@ class Dense(object):
 
         #update the weights by subtracting the gradient
         self.weights = self.weights - ( dLoss_dw * self.learning_rate)
+
+        # ADD REGULARIZAERS TO THE WEIGHTS
+        for regularizer in self.regularizers:
+            self.weights = regularizer.update(self)
 
         # $L = (y-x)^2 = ( f(y') - x)^2 $ so
         # dL/dx = dL/d[f(y')] d [f(y')]/dy' dy'/dx

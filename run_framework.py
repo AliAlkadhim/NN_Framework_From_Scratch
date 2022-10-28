@@ -1,17 +1,21 @@
 import data_loader_two_by_two as dat
 import data_loader_IQN as dat_IQN
+import data_loader_nordic_runes as dat_nordic
+
 import framework.framework as framework
 #import the directory_framework.filename_framework (becauase the directory is viewed as a package because it has __init__.py)
+from framework.regularization import L1, L2#, Limit
+#remember that L2 regularizarizers
 import framework.layer as layer
 import framework.activation as activation
 import framework.loss_funcs as loss_funcs
 
 
-train_generator, eval_generator = dat.get_data_set()
+train_generator, eval_generator = dat_nordic.get_data_set()
 
 # train_generator, eval_generator = dat_IQN.get_data_set()
 
-sample=next(train_generator())#this is just to get the dimenstions of one batch
+sample=next(train_generator)#this is just to get the dimenstions of one batch
 print('sample', sample)
 
 #Find the number of input nodes. Each sample (training example) has shape sample.shape, which in this case is (2,2). The number
@@ -36,7 +40,7 @@ print("N_NODES = [N_INPUT_NODES] +[N_HIDDEN_NODES] + [N_OUTPUT_NODES]  = ", N_NO
 #N_NODES=[N_IN_NODES, N_HIDDEN_NODES, N_OUT_NODES]
 
 
-EXPECTED_VALUES_RANGE = (-3,4)#the min and max of the data itself
+EXPECTED_VALUES_RANGE = (0,1)#the min and max of the data itself
 DESIRED_VALUES_RANGE = (-0.5,0.5)#what we want the range to be after scaline
 
 
@@ -45,16 +49,19 @@ MODEL=[]
 #iterate through the list of nodes in each layer
 for i_layer in range(len(N_NODES)-1):
     #e.g. 2 layers w one hidden in between has [N_IN_NODES, N_HIDDEN_NODES, N_OUT_NODES]
-    MODEL.append(layer.Dense(
+    new_layer = layer.Dense(
         N_inputs=N_NODES[i_layer],
         N_outputs=N_NODES[i_layer+1],
         #the N_output is either the hidden node number or the output node number
         activation=activation.tanh
-    ))
+    )
+    new_layer.add_regularizer(L1())
+    new_layer.add_regularizer(L1())
+    MODEL.append(new_layer)
 
 print('MODEL=',MODEL)
 
-
+#each of the arguments to ANN is a class!
 autoencoder = framework.ANN(
     model=MODEL, 
     expected_input_range=EXPECTED_VALUES_RANGE,

@@ -9,7 +9,10 @@ def get_data_set():
 	examples = []
 	n_examples=1000
 	for i in range(n_examples):
-		array_2d = np.random.rand(2,2)#sample unifrm data in range (0,1) of size 2x2
+    	# array_2d =np.random.exponential(scale=2, size=(2,2) ) 
+		# array_2d = np.random.rand(2,2)
+		#sample unifrm data in range (0,1) of size 2x2
+		array_2d =np.random.exponential(scale=2, size=(2,2) )
 		examples.append(array_2d)
 		#its generating a 2x2 array for each example, but when training, this will be flattened as a 1d aray for each example
 
