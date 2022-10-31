@@ -13,7 +13,7 @@ class ANN(object):
     """
     def __init__(self, 
     model, 
-    expected_input_range=(0,1),
+    expected_input_range,
     loss_func=None
     ):
         self.model= model
@@ -22,8 +22,8 @@ class ANN(object):
         self.loss_func=loss_func#loss function class
 
         #it helps to set the numbers as integers so that we can call range on it later
-        self.n_iter_train = int(1e3)#number of iterations to train
-        self.n_iter_evaluate = int(1e3) #number of iterations to evaluate on
+        self.n_iter_train = int(1e4)#number of iterations to train
+        self.n_iter_evaluate = int(1e2) #number of iterations to evaluate on
         self.expected_input_range=expected_input_range
         self.error_history = []# list of errors, at each iteration of training/evaluation, the error will be added to it
         self.viz_interval = int(1e1)
@@ -96,14 +96,15 @@ class ANN(object):
         """
         for iter in range(self.n_iter_train):
             # x = next(training_set()).ravel()#ravel flattens it to 1-d array
-            x = next(training_set_x()).ravel()
+            x = next(training_set_x).ravel()
             # #The generators are sometimes finicky in whether they want paranthesis after them or not.
-            #e.g. next(training_set_x()) and next(training_set_y) currently work
+            #e.g. next(training_set_x()) and next(training_set_y) currently work with next(training_set_x) 
+            #maybe its a python version thing, e.g. python3 works with 
 
-            x=self.normalize(x)
+            x=self.normalize_IQN(x)
             # y=self.forward_propagate_data(x)
             y = next(training_set_y).ravel()
-            y=self.normalize(y)
+            y=self.normalize_IQN(y)
             loss = self.loss_func.calc(x,y)
             #calculate the (minimize) derivative of the loss wrt x, ie returns dLoss_dx
             loss_grad = self.loss_func.calc_gradient(x,y)
@@ -121,7 +122,7 @@ class ANN(object):
 
     def evaluate(self, evaluation_set_x, evaluation_set_y):
         for iter in range(self.n_iter_evaluate):
-            x = next(evaluation_set_x()).ravel()
+            x = next(evaluation_set_x).ravel()
             # x = next(evaluation_set()).ravel()
             x = self.normalize(x)
             # y=self.forward_propagate_data(x)
@@ -139,6 +140,21 @@ class ANN(object):
                 print(f'train y {y} \t loss \t {loss}')
                 self.report_error()
 
+
+    def infer(self, evaluation_set_x):
+        #inderence set is not a generator, it is a normal dataset
+        y=[]
+        for iter in range(self.n_iter_evaluate):
+            x = next(evaluation_set_x).ravel()
+            # x = next(evaluation_set()).ravel()
+            x = self.normalize_IQN(x)
+            # y=self.forward_propagate_dat
+            y.append(self.forward_propagate_data(x))
+        
+        y= np.array(y).ravel()
+        y = self.denormalize_IQN(y)
+        np.save('predicted.npy', y)
+    
     def forward_propagate_data(self, x):
         """Forward propagate the inputs to the entire NN (ie the data)
 
@@ -185,10 +201,11 @@ class ANN(object):
             averaged_bin_end = (bin_i+1) * self.error_bin_size
             history_over_current_bin = history[averaged_bin_start:averaged_bin_end]
             # print('history_over_current_bin', history_over_current_bin)
-            averaged_history.append(np.mean(history_over_current_bin))
-
+            history_over_current_bin_avg=np.mean(history_over_current_bin)
+            averaged_history.append(history_over_current_bin_avg)
+            print('history over curret bin', history_over_current_bin_avg)
+            
         error_history = np.log10(np.array(averaged_history)+1e-10)
-        print('error_history[:5]', error_history[:5])
         #take the log of the averaged history because there we could really notice/see small differences that really matter. the small value at the end is so that if the argument of log is 0 it doesnt break
         report_min=np.minimum(self.error_min, error_history)
         report_max=np.maximum(self.error_max, error_history)

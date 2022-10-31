@@ -19,6 +19,7 @@ train_ind = round(examples_x.shape[0] * train_frac)
 examples_x_train, examples_x_test = examples_x[0:train_ind, :], examples_x[train_ind:,:]
 examples_y_train, examples_y_test = examples_y[0:train_ind], examples_y[train_ind:]
 
+inference_set_x = examples_x_test
 def get_data_set():
     """this creates a list of size n_examples of np arrays, each of size 2x2 
     Generators (functions that use yield instead of return) are useful because they only get the subset of data that you want as opposed to loading the whole set to memory, and only give you the subset once, when called 
@@ -49,7 +50,10 @@ def get_data_set():
         while True:
             batch_x = get_batch_diabetes(examples_x_train, batch_size=20)
             yield batch_x
+            
     return training_set_x, training_set_y, evaluation_set_x, evaluation_set_y
+
+
 
 
 

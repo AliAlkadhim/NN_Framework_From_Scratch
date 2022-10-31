@@ -11,6 +11,8 @@ from framework.regularization import L1, L2#, Limit
 import framework.layer as layer
 import framework.activation as activation
 import framework.loss_funcs as loss_funcs
+from sklearn.datasets import load_diabetes
+import numpy as np
 
 
 training_set_x, training_set_y, evaluation_set_x, evaluation_set_y = dat_diabetes.get_data_set()
@@ -43,7 +45,15 @@ print("N_NODES = [N_INPUT_NODES] +[N_HIDDEN_NODES] + [N_OUTPUT_NODES]  = ", N_NO
 #N_NODES=[N_IN_NODES, N_HIDDEN_NODES, N_OUT_NODES]
 
 
-EXPECTED_VALUES_RANGE = (0,1)#the min and max of the data itself
+
+examples_x, examples_y = load_diabetes(return_X_y=True)
+#get the expected range of the data
+expected_min = np.minimum(np.min(examples_x),np.min(examples_y))
+expected_max = np.maximum(np.max(examples_x),np.max(examples_y))
+
+
+
+EXPECTED_VALUES_RANGE = (expected_min,expected_max)#the min and max of the data itself
 DESIRED_VALUES_RANGE = (-0.5,0.5)#what we want the range to be after scaline
 
 
@@ -73,6 +83,9 @@ autoencoder = framework.ANN(
     #here its training on the whole set then evaluating on the whole set
     
 #training_set_x, training_set_y, evaluation_set_x, evaluation_set_y 
-autoencoder.train(training_set_x, training_set_y())
-#X doesnt need the parentheses at end but y does?
-autoencoder.evaluate(evaluation_set_x())
+autoencoder.train(training_set_x(), training_set_y())
+# autoencoder.evaluate(evaluation_set_x(), evaluation_set_y())
+#train and evaluation methods show the loss dropping for both the training and evaluation sets
+
+
+autoencoder.infer(evaluation_set_x())
