@@ -3,22 +3,24 @@ import data_loader_IQN as dat_IQN
 import data_loader_diabetes as dat_diabetes
 import data_loader_nordic_runes as dat_nordic
 
-import framework.framework as framework
-# import framework.regression_framework as framework
+# import framework.framework as framework
+import framework.regression_framework as framework
 #import the directory_framework.filename_framework (becauase the directory is viewed as a package because it has __init__.py)
 from framework.regularization import L1, L2#, Limit
 #remember that L2 regularizarizers
 import framework.layer as layer
 import framework.activation as activation
 import framework.loss_funcs as loss_funcs
-
+from sklearn.datasets import load_diabetes
 import numpy as np
-# training_set_x, training_set_y, evaluation_set_x, evaluation_set_y = dat_diabetes.get_data_set()
 
-train_generator, eval_generator,expected_min, expected_max = dat_nordic.get_data_set()
+
+training_set_x, training_set_y, evaluation_set_x, evaluation_set_y = dat_diabetes.get_data_set()
+
+# train_generator, eval_generator = dat_IQN.get_data_set()
 
 # sample=next(train_generator()])#this is just to get the dimenstions of one batch
-sample=next(train_generator)
+sample=next(training_set_x())
 print('sample', sample)
 
 #Find the number of input nodes. Each sample (training example) has shape sample.shape, which in this case is (2,2). The number
@@ -30,7 +32,7 @@ print('sample', sample)
 #we're gonna be building an autoencoder, which tries to replicate the input,therefore we have the same number of nodes as pixels and the sample for output and input layers
 
 #DEFINE THE # NODES IN EACH HIDDEN LAYER
-N_HIDDEN_NODES = [24]
+N_HIDDEN_NODES = [5, 3, 2]
 #the number of layers of the model is just len(N_HIDDEN_NODES)
 #define # input and output nodes for each LAYER
 N_INPUT_NODES =  sample.shape[0] * sample.shape[1] 
@@ -44,9 +46,12 @@ print("N_NODES = [N_INPUT_NODES] +[N_HIDDEN_NODES] + [N_OUTPUT_NODES]  = ", N_NO
 
 
 
-# we lave only: L_input -> L_hidden -> L_output, so we should apply dropout only on the input and hidden layers
-DROPOUT_RATES=[0.2,0.5]
-#the values were chosen from the dropout paper https://jmlr.org/papers/volume15/srivastava14a/srivastava14a.pdf
+examples_x, examples_y = load_diabetes(return_X_y=True)
+#get the expected range of the data
+expected_min = np.minimum(np.min(examples_x),np.min(examples_y))
+expected_max = np.maximum(np.max(examples_x),np.max(examples_y))
+
+
 
 EXPECTED_VALUES_RANGE = (expected_min,expected_max)#the min and max of the data itself
 DESIRED_VALUES_RANGE = (-0.5,0.5)#what we want the range to be after scaline
@@ -61,8 +66,7 @@ for i_layer in range(len(N_NODES)-1):
         N_inputs=N_NODES[i_layer],
         N_outputs=N_NODES[i_layer+1],
         #the N_output is either the hidden node number or the output node number
-        activation=activation.tanh,
-        dropout_rate = DROPOUT_RATES[i_layer]
+        activation=activation.tanh
     )
     new_layer.add_regularizer(L1())
     new_layer.add_regularizer(L1())
@@ -79,9 +83,9 @@ autoencoder = framework.ANN(
     #here its training on the whole set then evaluating on the whole set
     
 #training_set_x, training_set_y, evaluation_set_x, evaluation_set_y 
-autoencoder.train(train_generator)
-autoencoder.evaluate(train_generator)
+autoencoder.train(training_set_x(), training_set_y())
+# autoencoder.evaluate(evaluation_set_x(), evaluation_set_y())
 #train and evaluation methods show the loss dropping for both the training and evaluation sets
 
 
-# autoencoder.infer(evaluation_set_x())
+autoencoder.infer(evaluation_set_x())

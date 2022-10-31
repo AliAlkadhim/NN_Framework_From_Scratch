@@ -23,7 +23,8 @@ def get_data_set():
     """
 
     examples = list(ef.runes.values())
-
+    expected_min = np.min(examples)
+    expected_max = np.max(examples)
     def training_set():
         while True:
             index = np.random.choice(len(examples))
@@ -34,4 +35,4 @@ def get_data_set():
             index = np.random.choice(len(examples))
             yield examples[index]
 
-    return training_set(), evaluation_set()
+    return training_set(), evaluation_set(), expected_min, expected_max

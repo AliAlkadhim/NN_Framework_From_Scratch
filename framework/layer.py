@@ -1,10 +1,17 @@
 import numpy as np
+from numba import njit
+
+
+# def initialize_stuff_with_numba:
+    # return weights, w_grad,
 
 class Dense(object):
+    
     def __init__(self,
     N_inputs,
     N_outputs,
-    activation
+    activation,
+    dropout_rate
     ):
         """Define the number of input and output NODES for a particular layer. A layer could then be made by calling 
         layer= Dense(N_inputs,N_outputs). For example, a single layer NN with no hidden layers could be done with
@@ -16,7 +23,9 @@ class Dense(object):
         self.N_inputs = int(N_inputs)
         self.N_outputs = int(N_outputs)
         self.activation=activation
-        self.learning_rate=int(1e-1)
+        self.learning_rate=int(1e-2)
+        #remember that the dropout rate is on average that value (approaches this value as number of nodes approaches infinity
+        self.dropout_rate=dropout_rate
 
 
         #the size of the weights is a matrix of ( N_inputs + 1) X (N_outputs) (and the inputs) is w[N_inputs]+b which is the rows, and the outputs will have [N_outputs]
@@ -29,6 +38,8 @@ class Dense(object):
         #Define set of inputs coming in to the network
         self.x = np.zeros((1,self.N_inputs+1))
         self.y=np.zeros((1,self.N_outputs))
+        
+        self.i_dropout=np.zeros(shape=self.x.size, dtype=bool)
 
         #initiate empty list of regularizers
         self.regularizers=[]
@@ -37,15 +48,35 @@ class Dense(object):
         self.regularizers.append(new_regularizer)
             
 
-    def forward_propagate_layer(self, inputs):
+    # @njit doesnt work here
+    def forward_propagate_layer(self, inputs, evaluating=False):
         """propagate the inputs forward through the NN
 
         Args:
             inputs : (INPUT TO THE LAYER) vector of values of size [1,N_input]
-
+            Evaluating: a boolean, on whether your calling this function in evaluation or training
         Returns:
             y : of size [1, N_out]
         """
+        #if in evaluation mode, we want to use the whole NN, i.e. we dont want to use dtopout
+        if evaluating:
+            dropout_rate=0
+        else:
+            dropout_rate=self.dropout_rate
+        
+        #generate a list of false booleans of the size of the inputs (nodes) of he layer
+        # self.i_dropout=np.zeros(shape=self.x.size, dtype=bool)
+        #sample a random uniform between 0 and 1
+        unif = np.random.uniform(size=self.x.size)
+        #if unif < dropout_rate, set dropout at that index (node) to be true
+        self.i_dropout[np.where(unif < dropout_rate)] = True
+        #now set every node (index of x) where i_dropout=True to 0
+        self.x[:, self.i_dropout] = 0
+        #set everywhere where i_dropout is not true (the np.logical_not just flips the booleans) to a multiplicative factor, so that the aggregate result will have the same mean/variance 
+        self.x[:, np.logical_not(self.i_dropout)] *= 1/(1-dropout_rate)
+        
+        
+        
         #inputs are the inputs to the layer
         #make a 1X1 bias matrix of ones
         bias=np.ones((1,1))
@@ -61,6 +92,7 @@ class Dense(object):
         #here y is really yprime in the back_propagate_layer() layer , ie yprime=activation_function(y)
         return self.y
 
+    
     def back_propagate_layer(self, dLoss_dy):
         """
         Args:
@@ -96,11 +128,16 @@ class Dense(object):
 
         # ADD REGULARIZAERS TO THE WEIGHTS
         for regularizer in self.regularizers:
+            #self is a copy of the whole class, so e.g.
+            # layer = Layer(),  update(layer) from another script is the same as update(self) here
             self.weights = regularizer.update(self)
 
         # $L = (y-x)^2 = ( f(y') - x)^2 $ so
         # dL/dx = dL/d[f(y')] d [f(y')]/dy' dy'/dx
         dLoss_dx = (dLoss_dy * dy_dyprime) @ self.weights.transpose()
 
+        #now remove dropout nodes
+        dLoss_dx[:,self.i_dropout] = 0
+        
         #return everything except the last column, which is the bias term, which is always 1 (const) and not backpropagated
         return dLoss_dx[:, :-1]

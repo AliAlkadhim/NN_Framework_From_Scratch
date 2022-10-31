@@ -2,6 +2,8 @@
 import numpy as np
 import os
 import matplotlib.pyplot as plt
+from numba import njit
+
 plt.switch_backend('agg')#switch to interactive plot
 
 class ANN(object):
@@ -49,6 +51,7 @@ class ANN(object):
         scaled_values = (values - offset)/scale_factor - 0.5#this -0.5 is there so that the lowest value is -0.5
         return scaled_values
 
+    
     def normalize_IQN(self, values):
         expected_range=self.expected_input_range
         expected_min, expected_max = expected_range
@@ -72,7 +75,7 @@ class ANN(object):
         offset = expected_min
         return normalized_values  * scale_factor + offset
 
-
+    
     def RMS(self, v):
         return (np.mean(v**2))**0.5
 
