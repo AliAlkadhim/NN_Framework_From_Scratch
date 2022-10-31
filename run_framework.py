@@ -1,8 +1,10 @@
 import data_loader_two_by_two as dat
 import data_loader_IQN as dat_IQN
+import data_loader_diabetes as dat_diabetes
 import data_loader_nordic_runes as dat_nordic
 
-import framework.framework as framework
+# import framework.framework as framework
+import framework.regression_framework as framework
 #import the directory_framework.filename_framework (becauase the directory is viewed as a package because it has __init__.py)
 from framework.regularization import L1, L2#, Limit
 #remember that L2 regularizarizers
@@ -11,11 +13,12 @@ import framework.activation as activation
 import framework.loss_funcs as loss_funcs
 
 
-train_generator, eval_generator = dat_nordic.get_data_set()
+training_set_x, training_set_y, evaluation_set_x, evaluation_set_y = dat_diabetes.get_data_set()
 
 # train_generator, eval_generator = dat_IQN.get_data_set()
 
-sample=next(train_generator)#this is just to get the dimenstions of one batch
+# sample=next(train_generator()])#this is just to get the dimenstions of one batch
+sample=next(training_set_x())
 print('sample', sample)
 
 #Find the number of input nodes. Each sample (training example) has shape sample.shape, which in this case is (2,2). The number
@@ -68,5 +71,8 @@ autoencoder = framework.ANN(
     loss_func=loss_funcs.quadratic_loss
     )#have to call model since its in __init__
     #here its training on the whole set then evaluating on the whole set
-autoencoder.train(train_generator)
-autoencoder.evaluate(eval_generator)
+    
+#training_set_x, training_set_y, evaluation_set_x, evaluation_set_y 
+autoencoder.train(training_set_x, training_set_y())
+#X doesnt need the parentheses at end but y does?
+autoencoder.evaluate(evaluation_set_x())
